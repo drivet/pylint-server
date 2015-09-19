@@ -1,0 +1,6 @@
+-e .
+rope==0.10.2
+ropemacs==0.7
+ropemode==0.2
+pylint==1.3.1
+pep8==1.5.7
