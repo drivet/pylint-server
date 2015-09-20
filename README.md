@@ -32,13 +32,13 @@ after_success:
 Assuming you're using github, the app will deposit the report under:
 
 <pre>
-/<githubuser>/<repo>/report.html
+/githubuser/repo/report.html
 </pre>
 
 And a colour coded pylint rating image under:
 
 <pre>
-/<githubuser>/<repo>/rating.svg
+/githubuser/repo/rating.svg
 </pre>
 
 Put a badge on your README accordingly.
