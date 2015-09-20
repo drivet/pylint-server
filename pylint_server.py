@@ -1,11 +1,13 @@
 from __future__ import absolute_import
 
-from flask import Flask, request, Blueprint
+from flask import Flask, request, Blueprint, current_app
 import os
 import re
 from travispy import TravisPy
+import logging
 
 
+LOG_LEVEL = logging.INFO
 OUTPUT_FOLDER = '/tmp/pylint-server'
 BADGE_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" width="85" height="20">
   <linearGradient id="a" x2="0" y2="100%">
@@ -35,18 +37,31 @@ mainbp = Blueprint('main', __name__)
 
 @mainbp.route('/reports', methods=['POST'])
 def handle_report_post():
-    data = request.data
-    (travis_job_id_str, report) = data.split('&', 1)
+    current_app.logger.info('handling POST on /reports')
+    travis_job_id_str = None
+    if 'travis-job-id' in request.form:
+        travis_job_id_str = request.form['travis-job-id']
+        current_app.logger.info('got travis job id as string: '+travis_job_id_str)
+    report = None
+    if 'pylint-report' in request.files:
+        current_app.logger.info('about to read report file')
+        report = request.files['pylint-report'].read()
+        #current_app.logger.info('about to read report file')
+        #report = load_file('/tmp/pylint-report.html')
+        current_app.logger.info('read report file: '+str(len(report)))
     slug = get_repo_slug(int(travis_job_id_str))
     if slug:
         output_folder = current_app.config['OUTPUT_FOLDER']
         output_report = os.path.join(output_folder, slug, 'report.html')
+        current_app.logger.info('saving report to '+output_report)
         save_file(output_report, report)
 
         (rating, colour) = get_rating_and_colour(report)
+        current_app.logger.info('found rating '+str(rating)+' and colour '+str(colour))
         output_badge = os.path.join(output_folder, slug, 'rating.svg')
+        current_app.logger.info('saving badge to '+output_badge)
         save_file(output_badge, BADGE_TEMPLATE.format(rating, colour))
-        return 'OK', 200
+        return 'OK\n', 200
     else:
         raise ValueError('missing repo slug')
 
@@ -54,7 +69,7 @@ def handle_report_post():
 def get_rating_and_colour(report):
     colour = '9d9d9d'
     rating = 0
-    match = re.search("Your code has been rated at (.+)/10", report)
+    match = re.search("Your code has been rated at (.+?)/10", report)
     if match:
         rating_str = match.group(1)
         rating = float(match.group(1))
@@ -70,9 +85,13 @@ def get_rating_and_colour(report):
 
 
 def get_repo_slug(travis_job_id):
+    current_app.logger.info('about to contact travis')
     travis = TravisPy.github_auth(os.environ["GITHUB_TOKEN"])
+    current_app.logger.info('contacted travis, getting job for id '+str(travis_job_id))
     job = travis.job(travis_job_id)
+    current_app.logger.info('got travis job, getting repo')
     repo = travis.repo(job.repository_id)
+    current_app.logger.info('got repo, returning slug: '+repo.slug)
     return repo.slug
 
 
@@ -89,12 +108,20 @@ def ensure_path(path):
         os.makedirs(path)
 
 
+def load_file(filename):
+    """Load file filename and return contents"""
+    with open(filename, 'r') as f:
+        file_contents = f.read()
+    return unicode(file_contents)
+
+
 def create_app(config=None):
     app = Flask(__name__)
     app.config.from_object(__name__)
     if config:
         app.config.from_object(config)
     app.config['PROPAGATE_EXCEPTIONS'] = True
+    app.logger.setLevel(app.config['LOG_LEVEL'])
     app.register_blueprint(mainbp)
     return app
 
