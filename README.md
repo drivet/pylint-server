@@ -20,14 +20,18 @@ a pylint report generated from your travis build, and a travis job id.
 
 In your install section, put something like the following:
 
+<pre>
 install:
   - "pip install pylint"
+</pre>
 
 In your after_success section, put something like this:
 
+<pre>
 after_success:
   - pylint --output-format=html pylint_server > /tmp/pylint-report.html
   - curl -v -m 120 -X POST -F travis-job-id=$TRAVIS_JOB_ID -F pylint-report=@/tmp/pylint-report.html https://pylint.whatever.com/reports
+</pre>
 
 Assuming you're using github, the app will deposit the report under:
 
