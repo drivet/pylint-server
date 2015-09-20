@@ -46,8 +46,6 @@ def handle_report_post():
     if 'pylint-report' in request.files:
         current_app.logger.info('about to read report file')
         report = request.files['pylint-report'].read()
-        #current_app.logger.info('about to read report file')
-        #report = load_file('/tmp/pylint-report.html')
         current_app.logger.info('read report file: '+str(len(report)))
     slug = get_repo_slug(int(travis_job_id_str))
     if slug:
@@ -106,13 +104,6 @@ def ensure_path(path):
     """Make sure the path exists, creating it if need be"""
     if not os.path.exists(path):
         os.makedirs(path)
-
-
-def load_file(filename):
-    """Load file filename and return contents"""
-    with open(filename, 'r') as f:
-        file_contents = f.read()
-    return unicode(file_contents)
 
 
 def create_app(config=None):

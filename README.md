@@ -1,21 +1,39 @@
-# pylint-server
+pylint-server
+====
+[![Build Status](https://travis-ci.org/drivet/pylint-server.svg?branch=master)](https://travis-ci.org/drivet/pylint-server)
+[![Coverage Status](https://coveralls.io/repos/drivet/pylint-server/badge.svg?branch=master)](https://coveralls.io/r/drivet/pylint-server?branch=master)
+[![Pylint Rating](https://pylint.desmondrivet.com/drivet/pylint-server/rating.svg)](https://pylint.desmondrivet.com/drivet/pylint-server/report.html)
 
 A small Flask application to keep keep track of pylint reports and ratings
 on a per-repository basis.
 
 ## Requirements
 
-The only real requirement is Flask.  I don't think you need a particularly
-up to date one.
+The two main requirements are Flask and Travis.  No other build server ios
+supported at the moment.
 
-## Deployment
+## Deployment and Usage
 
-This application configures a POST route on /<repo>/github-webhook.
+This application configures a POST route on /reports.  This endpoint accepts
+a pylint report generated from your travis build, and a travis job id.
 
-This means that you have to configure your github webhook (in the repo
-you're cloning from) to hit your server like this:
+In your install section, put seomthing like the following:
 
-http://<yourserver>/<repo>/github-webhook
+install:
+  - "pip install pylint"
 
-In any case, what's provides here is mostly a template to be adpated to new
-situations.
+In your after_success section, put something like this:
+
+after_success:
+  - pylint --output-format=html pylint_server > /tmp/pylint-report.html
+  - curl -v -m 120 -X POST -F travis-job-id=$TRAVIS_JOB_ID -F pylint-report=@/tmp/pylint-report.html https://pylint.whatever.com/reports
+
+Assuming you're using github, the app will deposit the report under:
+
+/<githubuser>/<repo>/report.html
+
+And a colour coded pylint rating image under:
+
+/<githubuser>/<repo>/rating.svg
+
+Put a badge on your README accordingly.

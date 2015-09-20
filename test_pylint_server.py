@@ -1,8 +1,12 @@
+#pylint: skip-file
+
 from flask.ext.testing import TestCase
 from pylint_server import create_app
 import pylint_server
 import shutil
 import os
+from StringIO import StringIO
+
 
 class FakeTravisApi(object):
     def __init__(self, job, repo):
@@ -29,7 +33,7 @@ class FakeTravis(object):
     def repo(self,repoid):
         self.repoid = repoid
         return self._repo
-        
+
 
 class FakeJob(object):
     def __init__(self, jobid, repoid):
@@ -40,81 +44,20 @@ class FakeJob(object):
 class FakeRepo(object):
     def __init__(self, slug):
         self.slug = slug
-    
+
 
 POST_DATA = """
-12345&Blah Blah Blah
+Blah Blah Blah
 Foo Foo Foo
 Your code has been rated at {0}/10
 La di da
 """
 
-class PylintServerIntegrationTest(TestCase):
 
-    def create_app(self):
-        return create_app()
-        
-    def test_report_generated(self):
-        old_environ = pylint_server.os.environ
-        pylint_server.os.environ = {'GITHUB_TOKEN': 'AWESOMETOKEN'}
-
-        old_travis_api = pylint_server.TravisPy
-        pylint_server.TravisPy = FakeTravisApi(FakeJob(jobid=123, repoid=456),
-                                               FakeRepo(slug='drivet/yawt'))
-
-        response = self.client.post('/reports', data=POST_DATA.format('9.5'))
-        self.assertTrue(os.path.exists('/tmp/pylint-server/drivet/yawt/report.html'))
-        self.assertTrue(os.path.exists('/tmp/pylint-server/drivet/yawt/rating.svg'))
-        self.assertTrue('9.5' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
-      
-        pylint_server.TravisPy = old_travis_api
-        pylint_server.os.environ = old_environ
-
-    def test_rating_greater_than_9_generates_green_badge(self):
-        old_environ = pylint_server.os.environ
-        pylint_server.os.environ = {'GITHUB_TOKEN': 'AWESOMETOKEN'}
-
-        old_travis_api = pylint_server.TravisPy
-        pylint_server.TravisPy = FakeTravisApi(FakeJob(jobid=123, repoid=456),
-                                               FakeRepo(slug='drivet/yawt'))
-
-        response = self.client.post('/reports', data=POST_DATA.format('9.5'))
-        self.assertTrue('44cc11' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
-      
-        pylint_server.TravisPy = old_travis_api
-        pylint_server.os.environ = old_environ
- 
-    def test_rating_greater_than_7_generates_orange_badge(self):
-        old_environ = pylint_server.os.environ
-        pylint_server.os.environ = {'GITHUB_TOKEN': 'AWESOMETOKEN'}
-
-        old_travis_api = pylint_server.TravisPy
-        pylint_server.TravisPy = FakeTravisApi(FakeJob(jobid=123, repoid=456),
-                                               FakeRepo(slug='drivet/yawt'))
-
-        response = self.client.post('/reports', data=POST_DATA.format('7.1'))
-        self.assertTrue('f89406' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
-      
-        pylint_server.TravisPy = old_travis_api
-        pylint_server.os.environ = old_environ
-
-    def test_rating_less_than_7_generates_red_badge(self):
-        old_environ = pylint_server.os.environ
-        pylint_server.os.environ = {'GITHUB_TOKEN': 'AWESOMETOKEN'}
-
-        old_travis_api = pylint_server.TravisPy
-        pylint_server.TravisPy = FakeTravisApi(FakeJob(jobid=123, repoid=456),
-                                               FakeRepo(slug='drivet/yawt'))
-
-        response = self.client.post('/reports', data=POST_DATA.format('6'))
-        self.assertTrue('b94947' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
-      
-        pylint_server.TravisPy = old_travis_api
-        pylint_server.os.environ = old_environ
-
-    def tearDown(self):
-        if os.path.exists('/tmp/pylint-server'):
-            shutil.rmtree('/tmp/pylint-server')
+def get_post_data(rating):
+    return {'travis-job-id': '12345',
+            'pylint-report': (StringIO(POST_DATA.format(rating)),
+                              '/tmp/pylint-report.html')}
 
 
 def load_file(filename):
@@ -122,3 +65,40 @@ def load_file(filename):
     with open(filename, 'r') as f:
         file_contents = f.read()
     return unicode(file_contents)
+
+
+class PylintServerIntegrationTest(TestCase):
+    def create_app(self):
+        return create_app()
+
+    def setUp(self):
+        self.old_environ = pylint_server.os.environ
+        pylint_server.os.environ = {'GITHUB_TOKEN': 'AWESOMETOKEN'}
+
+        self.old_travis_api = pylint_server.TravisPy
+        pylint_server.TravisPy = FakeTravisApi(FakeJob(jobid=123, repoid=456),
+                                               FakeRepo(slug='drivet/yawt'))
+
+    def test_report_generated(self):
+        response = self.client.post('/reports', data=get_post_data('9.5'))
+        self.assertTrue(os.path.exists('/tmp/pylint-server/drivet/yawt/report.html'))
+        self.assertTrue(os.path.exists('/tmp/pylint-server/drivet/yawt/rating.svg'))
+        self.assertTrue('9.5' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
+
+    def test_rating_greater_than_9_generates_green_badge(self):
+        response = self.client.post('/reports', data=get_post_data('9.5'))
+        self.assertTrue('44cc11' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
+
+    def test_rating_greater_than_7_generates_orange_badge(self):
+        response = self.client.post('/reports', data=get_post_data('7.1'))
+        self.assertTrue('f89406' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
+
+    def test_rating_less_than_7_generates_red_badge(self):
+        response = self.client.post('/reports', data=get_post_data('6'))
+        self.assertTrue('b94947' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
+
+    def tearDown(self):
+        if os.path.exists('/tmp/pylint-server'):
+            shutil.rmtree('/tmp/pylint-server')
+        pylint_server.TravisPy = self.old_travis_api
+        pylint_server.os.environ = self.old_environ

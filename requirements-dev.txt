@@ -1,4 +1,4 @@
--e .
+-r requirements-test.txt
 rope==0.10.2
 ropemacs==0.7
 ropemode==0.2
