@@ -18,7 +18,7 @@ supported at the moment.
 This application configures a POST route on /reports.  This endpoint accepts
 a pylint report generated from your travis build, and a travis job id.
 
-In your install section, put seomthing like the following:
+In your install section, put something like the following:
 
 install:
   - "pip install pylint"
@@ -31,10 +31,14 @@ after_success:
 
 Assuming you're using github, the app will deposit the report under:
 
+<pre>
 /<githubuser>/<repo>/report.html
+</pre>
 
 And a colour coded pylint rating image under:
 
+<pre>
 /<githubuser>/<repo>/rating.svg
+</pre>
 
 Put a badge on your README accordingly.
