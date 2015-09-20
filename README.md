@@ -2,6 +2,7 @@ pylint-server
 ====
 [![Build Status](https://travis-ci.org/drivet/pylint-server.svg?branch=master)](https://travis-ci.org/drivet/pylint-server)
 [![Coverage Status](https://coveralls.io/repos/drivet/pylint-server/badge.svg?branch=master)](https://coveralls.io/r/drivet/pylint-server?branch=master)
+[![Code Climate](https://codeclimate.com/github/drivet/pylint-server/badges/gpa.svg)](https://codeclimate.com/github/drivet/pylint-server)
 [![Pylint Rating](https://pylint.desmondrivet.com/drivet/pylint-server/rating.svg)](https://pylint.desmondrivet.com/drivet/pylint-server/report.html)
 
 A small Flask application to keep keep track of pylint reports and ratings
