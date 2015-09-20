@@ -24,7 +24,9 @@ BADGE_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" width="85" height="2
   <!-- whole rectangle -->
   <rect rx="3" width="85" height="20" fill="url(#a)"/>
 
-  <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+  <g fill="#fff" text-anchor="middle"
+                 font-family="DejaVu Sans,Verdana,Geneva,sans-serif"
+                 font-size="11">
     <text x="25" y="15" fill="#010101" fill-opacity=".3">pylint</text>
     <text x="25" y="14">pylint</text>
     <text x="67" y="15" fill="#010101" fill-opacity=".3">{0:.2f}</text>
@@ -35,18 +37,18 @@ BADGE_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" width="85" height="2
 
 mainbp = Blueprint('main', __name__)
 
+
 @mainbp.route('/reports', methods=['POST'])
 def handle_report_post():
     current_app.logger.info('handling POST on /reports')
     travis_job_id_str = None
     if 'travis-job-id' in request.form:
         travis_job_id_str = request.form['travis-job-id']
-        current_app.logger.info('got travis job id as string: '+travis_job_id_str)
+
     report = None
     if 'pylint-report' in request.files:
-        current_app.logger.info('about to read report file')
         report = request.files['pylint-report'].read()
-        current_app.logger.info('read report file: '+str(len(report)))
+
     slug = get_repo_slug(int(travis_job_id_str))
     if slug:
         output_folder = current_app.config['OUTPUT_FOLDER']
@@ -55,7 +57,6 @@ def handle_report_post():
         save_file(output_report, report)
 
         (rating, colour) = get_rating_and_colour(report)
-        current_app.logger.info('found rating '+str(rating)+' and colour '+str(colour))
         output_badge = os.path.join(output_folder, slug, 'rating.svg')
         current_app.logger.info('saving badge to '+output_badge)
         save_file(output_badge, BADGE_TEMPLATE.format(rating, colour))
@@ -69,7 +70,6 @@ def get_rating_and_colour(report):
     rating = 0
     match = re.search("Your code has been rated at (.+?)/10", report)
     if match:
-        rating_str = match.group(1)
         rating = float(match.group(1))
         if rating >= 9 and rating <= 10:
             colour = '44cc11'
@@ -83,21 +83,19 @@ def get_rating_and_colour(report):
 
 
 def get_repo_slug(travis_job_id):
-    current_app.logger.info('about to contact travis')
+    current_app.logger.info('getting repo slug, contacting travis...')
     travis = TravisPy.github_auth(os.environ["GITHUB_TOKEN"])
-    current_app.logger.info('contacted travis, getting job for id '+str(travis_job_id))
     job = travis.job(travis_job_id)
-    current_app.logger.info('got travis job, getting repo')
     repo = travis.repo(job.repository_id)
-    current_app.logger.info('got repo, returning slug: '+repo.slug)
+    current_app.logger.info('returning slug: '+repo.slug)
     return repo.slug
 
 
 def save_file(filename, contents):
     """Save a file anywhere"""
     ensure_path(os.path.dirname(filename))
-    with open(filename, 'w') as f:
-        f.write(unicode(contents))
+    with open(filename, 'w') as thefile:
+        thefile.write(unicode(contents))
 
 
 def ensure_path(path):
@@ -113,4 +111,3 @@ def create_app():
     app.logger.setLevel(app.config['LOG_LEVEL'])
     app.register_blueprint(mainbp)
     return app
-
