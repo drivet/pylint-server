@@ -1,0 +1,2 @@
+exclude_paths:
+- "test_pylint_server.py"
