@@ -97,6 +97,19 @@ class PylintServerIntegrationTest(TestCase):
         response = self.client.post('/reports', data=get_post_data('6'))
         self.assertTrue('b94947' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
 
+    def test_rating_less_than_0_generates_grey_badge(self):
+        response = self.client.post('/reports', data=get_post_data('-1'))
+        self.assertTrue('9d9d9d' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
+
+    def test_rating_greater_than_10_generates_grey_badge(self):
+        response = self.client.post('/reports', data=get_post_data('11'))
+        self.assertTrue('9d9d9d' in load_file('/tmp/pylint-server/drivet/yawt/rating.svg'))
+
+    def test_missing_slug_raises_error(self): 
+        pylint_server.TravisPy = FakeTravisApi(FakeJob(jobid=123, repoid=456),
+                                               FakeRepo(slug=''))
+        self.assertRaises(ValueError, self.client.post, '/reports', data=get_post_data('9.5'))
+
     def tearDown(self):
         if os.path.exists('/tmp/pylint-server'):
             shutil.rmtree('/tmp/pylint-server')

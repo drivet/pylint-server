@@ -106,18 +106,11 @@ def ensure_path(path):
         os.makedirs(path)
 
 
-def create_app(config=None):
+def create_app():
     app = Flask(__name__)
     app.config.from_object(__name__)
-    if config:
-        app.config.from_object(config)
     app.config['PROPAGATE_EXCEPTIONS'] = True
     app.logger.setLevel(app.config['LOG_LEVEL'])
     app.register_blueprint(mainbp)
     return app
 
-
-if __name__ == '__main__':
-    app = create_app()
-    app.debug = True
-    app.run(port=4568)
