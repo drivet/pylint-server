@@ -9,6 +9,7 @@ import logging
 
 LOG_LEVEL = logging.INFO
 OUTPUT_FOLDER = '/tmp/pylint-server'
+VALID_REPOS = []
 BADGE_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" width="85" height="20">
   <linearGradient id="a" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
@@ -50,7 +51,8 @@ def handle_report_post():
         report = request.files['pylint-report'].read()
 
     slug = get_repo_slug(int(travis_job_id_str))
-    if slug:
+    valid_repos = current_app.config['VALID_REPOS']
+    if slug and (not valid_repos or slug in valid_repos):
         output_folder = current_app.config['OUTPUT_FOLDER']
         output_report = os.path.join(output_folder, slug, 'report.html')
         current_app.logger.info('saving report to '+output_report)
@@ -62,7 +64,7 @@ def handle_report_post():
         save_file(output_badge, BADGE_TEMPLATE.format(rating, colour))
         return 'OK\n', 200
     else:
-        raise ValueError('missing repo slug')
+        raise ValueError('invalid repository slug')
 
 
 def get_rating_and_colour(report):
